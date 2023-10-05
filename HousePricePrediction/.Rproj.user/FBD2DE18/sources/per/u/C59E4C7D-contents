@@ -1,0 +1,68 @@
+###############################################################################
+# importing and installing libraries
+library(caret)
+library(readr)
+library(ggplot2)
+dev.off()
+###############################################################################
+# reading, preprocessing data and statistics
+
+# reading the data
+data <- read.csv("OnlyNumeric_Data.csv")
+data <- subset(data, select = -c(Id))
+
+# Checking if there are any nan values
+missing_values <- colSums(is.na(data))
+print(missing_values)
+
+
+data <- data.frame(sapply(data, as.numeric))
+
+
+data <- data[, c("GarageArea" , "SalePrice")]
+
+# view the last form of data
+
+View(data)
+
+
+################################################################################
+#-------------------------------------------------------------------------------
+# Training , Validation and Plotting 
+
+
+# split data into training set and validation set
+set.seed(123)
+train_index <- createDataPartition(data$SalePrice, p = 0.8, list = FALSE)
+train <- data[train_index, ]
+valid <- data[-train_index, ]
+
+# fit linear model on training set
+model <- lm(SalePrice ~ ., data = train)
+
+#print model summary
+summary(model)
+
+
+# make prediction on validation set
+predictions <- predict(model,valid)
+
+# Plotting x and y scatter and model fitting line
+dev.new(width = 10, height = 6)
+X_scatter_train <- train[, c("GarageArea", "SalePrice")]
+plot(X_scatter_train$GarageArea, X_scatter_train$SalePrice, xlab="GarageArea", ylab="Sale Price", main="Scatter Plot of Data")
+abline(model, col = "red")
+
+
+
+
+# plotting the actual and predicted values on validation set 
+dev.new(width = 10, height = 6)
+X_scatter_valid = valid[, c("GarageArea", "SalePrice")]
+plot(X_scatter_valid$GarageArea, X_scatter_valid$SalePrice, col = "blue", main = "Actual vs. Predicted Values", xlab = "GarageArea", ylab = "SalePrice")
+points(X_scatter_valid$GarageArea, predictions, col = "red")
+
+# evaluate model performance
+cv <- trainControl(method="cv",number=10)
+cv_results <- train(SalePrice~.,data=data,method = "lm",trControl=cv)
+print(cv_results)
